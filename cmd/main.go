@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"moneytrx/internal/config"
+	"moneytrx/internal/pubsub"
 	"moneytrx/internal/repository"
 	"moneytrx/internal/routes"
 
@@ -15,7 +16,7 @@ func main() {
 	var redisString string
 
 	flag.StringVar(&pgString, "pgString", "host=localhost port=5432 user=postgres password=postgres dbname=money_trx timezone=UTC", "Postgres connection string")
-	flag.StringVar(&redisString, "redisString", "redis://user:password@localhost:6379/0?protocol=3", "redis connection string")
+	flag.StringVar(&redisString, "redisString", "redis://:@localhost:6379/0?protocol=3", "redis connection string")
 
 	conn, err := config.ConnectDb(pgString)
 	if err != nil {
@@ -28,6 +29,12 @@ func main() {
 	repo := repository.PgRepo{
 		DB: conn,
 	}
+
+	subs := pubsub.Subscriber{
+		Db:    repo,
+		Redis: redis,
+	}
+	go subs.Subscribe()
 
 	ge := gin.Default()
 	routes.SetupRoutes(ge, repo, redis)

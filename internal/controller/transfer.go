@@ -2,7 +2,9 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"log"
 	"moneytrx/internal/model"
 	"moneytrx/internal/repository"
 	"net/http"
@@ -28,7 +30,7 @@ func (ct *Controller) Transfer(c *gin.Context) {
 		return
 	}
 
-	err := ct.Db.ReduceBalance(ctx, 1, req.Amount)
+	trxRecord, err := ct.Db.ReduceBalance(ctx, 1, req.Amount)
 	if err != nil {
 		if errors.Is(err, repository.ErrInsufucientBalance) || errors.Is(err, repository.ErrMerchantNotFound) {
 			c.IndentedJSON(http.StatusBadRequest, gin.H{
@@ -38,6 +40,13 @@ func (ct *Controller) Transfer(c *gin.Context) {
 		}
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
+	}
+	trxRecord.Success = req.Success
+
+	v, _ := json.Marshal(trxRecord)
+	err = ct.Redis.Publish(ctx, "trx", v).Err()
+	if err != nil {
+		log.Println(err)
 	}
 
 	c.IndentedJSON(http.StatusOK, gin.H{
