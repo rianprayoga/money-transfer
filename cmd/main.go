@@ -2,44 +2,32 @@ package main
 
 import (
 	"flag"
-	"moneytrx/internal/model"
+	"moneytrx/internal/config"
 	"moneytrx/internal/repository"
-	"net/http"
+	"moneytrx/internal/routes"
 
 	"github.com/gin-gonic/gin"
 )
 
-type application struct {
-	PgString string
-	Db       repository.PgRepo
-}
-
-func transfer(c *gin.Context) {
-
-	var req model.TrxRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.IndentedJSON(http.StatusOK, gin.H{
-		"amount": req.Amount,
-	})
-
-}
-
 func main() {
-	app := application{}
-	flag.StringVar(&app.PgString, "pgString", "host=localhost port=5432 user=postgres password=postgres dbname=money_trx timezone=UTC", "Postgres connection string")
 
-	conn, err := app.connectDb()
+	var pgString string
+	flag.StringVar(&pgString, "pgString", "host=localhost port=5432 user=postgres password=postgres dbname=money_trx timezone=UTC", "Postgres connection string")
+
+	conn, err := config.ConnectDb(pgString)
 	if err != nil {
 		panic(err)
 	}
 	defer conn.Close()
 
-	r := gin.Default()
+	repo := repository.PgRepo{
+		DB: conn,
+	}
 
-	r.POST("/transfer", transfer)
-	r.Run()
+	ge := gin.Default()
+	routes.SetupRoutes(ge, repo)
+	err = ge.Run(":8080")
+	if err != nil {
+		panic(err)
+	}
 }
