@@ -15,7 +15,7 @@ type PgRepo struct {
 	DB *sql.DB
 }
 
-func (pg *PgRepo) ReduceBalance(ctx context.Context, merchantId string, amount uint) error {
+func (pg *PgRepo) ReduceBalance(ctx context.Context, merchantId uint, amount uint) error {
 	tx, err := pg.DB.BeginTx(ctx, nil)
 	if err != nil {
 		return err
