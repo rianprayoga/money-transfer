@@ -9,10 +9,12 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 )
 
 type Controller struct {
-	Db repository.PgRepo
+	Db    repository.PgRepo
+	Redis *redis.Client
 }
 
 func (ct *Controller) Transfer(c *gin.Context) {
