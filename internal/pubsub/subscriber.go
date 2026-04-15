@@ -29,17 +29,19 @@ func (s *Subscriber) Subscribe() {
 		var req model.TrxRecord
 		json.Unmarshal([]byte(msg.Payload), &req)
 
-		if req.Success {
-			err := s.Db.SuccessTrx(context.TODO(), req.Id)
+		go func(req model.TrxRecord) {
+			if req.Success {
+				err := s.Db.SuccessTrx(context.TODO(), req.Id)
+				if err != nil {
+					log.Println(err.Error())
+				}
+				return
+			}
+
+			err := s.Db.FailedTrx(context.TODO(), req.Id, 1, req.Amount)
 			if err != nil {
 				log.Println(err.Error())
 			}
-			return
-		}
-
-		err := s.Db.FailedTrx(context.TODO(), req.Id, 1, req.Amount)
-		if err != nil {
-			log.Println(err.Error())
-		}
+		}(req)
 	}
 }

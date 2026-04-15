@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"moneytrx/internal/model"
+	"strings"
 )
 
 var (
@@ -45,6 +46,11 @@ func (pg *PgRepo) ReduceBalance(ctx context.Context, merchantId uint, amount uin
 		if err == sql.ErrNoRows {
 			return nil, ErrMerchantNotFound
 		}
+
+		if strings.Contains(err.Error(), "merchants_balance_check") {
+			return nil, ErrInsufucientBalance
+		}
+
 		return nil, err
 	}
 
